@@ -43,6 +43,8 @@ import java.util.List;
 
 public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouchListener {
 
+    private static final String DARKAN_RUNTIME_NAME = "Internal-17";
+
     private AWTCanvasView mTextureView;
     private LoggerView mLoggerView;
     private TouchCharInput mTouchCharInput;
@@ -201,8 +203,11 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
             placeMouseAt(CallbackBridge.physicalWidth / 2f, CallbackBridge.physicalHeight / 2f);
 
-            String jreName = LauncherPreferences.PREF_DEFAULT_RUNTIME;
+            String jreName = DARKAN_RUNTIME_NAME;
             final Runtime runtime = MultiRTUtils.forceReread(jreName);
+            if (runtime.versionString == null) {
+                throw new IllegalStateException("Java 17 runtime is not installed: " + jreName);
+            }
 
             mSkipDetectMod = false;
             if (mSkipDetectMod) {
@@ -376,14 +381,19 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     }
 
     public int launchJavaRuntime(Runtime runtime, String javaArgs) {
-        runtime = MultiRTUtils.forceReread("Internal");
         JREUtils.redirectAndPrintJRELog();
         try {
+            if (runtime == null || runtime.versionString == null) {
+                throw new IllegalStateException("Selected Java runtime is not installed");
+            }
+
             List<String> javaArgList = new ArrayList<>();
             File gamedir = new File(Tools.DIR_DATA);
 
             // Enable Caciocavallo
-            Tools.getCacioJavaArgs(javaArgList,runtime.javaVersion == 8);
+            Tools.getCacioJavaArgs(javaArgList, false);
+            Logger.appendToLog("Info: Selected Java runtime: " + runtime.name
+                    + " (Java " + runtime.javaVersion + ")");
             javaArgList.add("-DconfigFile="+Tools.DIR_DATA + "/config.json");
             javaArgList.add("-DpluginDir="+ Tools.DIR_DATA + "/plugins/");
             javaArgList.add("-DclientHomeOverride="+gamedir);
