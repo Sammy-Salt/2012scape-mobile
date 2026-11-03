@@ -22,8 +22,6 @@ import java.io.InputStream;
 
 public class AsyncAssetManager {
 
-    private static final String PLUGIN_PATH = "plugins";
-
     private AsyncAssetManager(){}
 
     /**
@@ -85,11 +83,7 @@ public class AsyncAssetManager {
                 // we repack them to a single file here
                 unpackComponent(ctx, "lwjgl3", false);
                 unpackComponent(ctx, "security", true);
-                Tools.copyAssetFile(ctx,"rt4.jar",Tools.DIR_DATA, false); // Change this to true if you're working on client features.
                 Tools.copyAssetFile(ctx,"config.json",Tools.DIR_DATA, false);
-
-                // Unzip the plugins for use.
-                extractAllPlugins(ctx);
 
             } catch (IOException e) {
                 Log.e("AsyncAssetManager", "Failed o unpack components !",e );
@@ -97,45 +91,6 @@ public class AsyncAssetManager {
             ProgressLayout.clearProgress(ProgressLayout.EXTRACT_COMPONENTS);
         });
     }
-
-    private static void extractAllPlugins(Context ctx) throws IOException {
-        // Path for plugins and disabled plugins
-        File pluginsDirectory = new File(Tools.DIR_DATA + "/plugins/");
-        File disabledPluginsDirectory = new File(Tools.DIR_DATA + "/disabledPlugins/");
-
-        // Check if disabledPluginsDirectory exists, if not, create it.
-        if (!disabledPluginsDirectory.exists()) {
-            boolean success = disabledPluginsDirectory.mkdirs();
-            if (!success) {
-                Log.e("TAG", "Failed to create directory: " + disabledPluginsDirectory.getPath());
-                // If we failed to create the directory, we can return early from this method
-                return;
-            }
-        }
-
-        String[] plugins = ctx.getAssets().list(PLUGIN_PATH);
-        if (plugins != null) {
-            for (String plugin : plugins) {
-                // Name of the directory that would be created when the plugin is extracted
-                String pluginDirectoryName = plugin.substring(0, plugin.lastIndexOf('.'));
-                File installedPluginDirectory = new File(pluginsDirectory, pluginDirectoryName);
-                File disabledPluginDirectory = new File(disabledPluginsDirectory, pluginDirectoryName);
-
-                // If a directory with this name already exists in either the plugins directory or the disabled plugins directory, skip this plugin
-                if (installedPluginDirectory.exists() || disabledPluginDirectory.exists()) {
-                    continue;
-                }
-
-                // Extract the plugin
-                Tools.copyAssetFile(ctx, PLUGIN_PATH + "/" + plugin, Tools.DIR_DATA, true);
-                Tools.ZipTool.unzip(
-                        new File(Tools.DIR_DATA + "/" + plugin),
-                        new File(Tools.DIR_DATA + "/plugins/")
-                );
-            }
-        }
-    }
-
 
     public static void extractPluginZip(File plugin) throws IOException {
         Tools.ZipTool.unzip(plugin, new File(Tools.DIR_DATA + "/plugins/"));
