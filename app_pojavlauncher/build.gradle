@@ -98,7 +98,7 @@ android {
     }
 
     defaultConfig {
-        applicationId "net.kdt.pojavlaunch"
+        applicationId "org.darkanmobile.app"
         minSdkVersion 21
         targetSdkVersion 33
         versionCode getDateSeconds()
@@ -113,9 +113,9 @@ android {
             shrinkResources false
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             signingConfig signingConfigs.customDebug
-            resValue 'string', 'application_package', 'net.kdt.pojavlaunch.debug'
-            resValue 'string', 'storageProviderAuthorities', 'net.kdt.pojavlaunch.scoped.gamefolder.debug'
-            resValue 'string', 'shareProviderAuthority', 'net.kdt.pojavlaunch.scoped.controlfolder.debug'
+            resValue 'string', 'application_package', 'org.darkanmobile.app.debug'
+            resValue 'string', 'storageProviderAuthorities', 'org.darkanmobile.app.scoped.gamefolder.debug'
+            resValue 'string', 'shareProviderAuthority', 'org.darkanmobile.app.scoped.controlfolder.debug'
         }
         proguard {
             initWith debug
