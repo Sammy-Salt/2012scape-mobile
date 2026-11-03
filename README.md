@@ -73,4 +73,3 @@ distribution of the game client.
 ::: {align="center"}
 **Built with curiosity, persistence, and a little Gielinor spirit.** ⚔️
 :::
-lol
