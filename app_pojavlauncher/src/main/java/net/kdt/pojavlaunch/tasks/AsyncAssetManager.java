@@ -12,6 +12,7 @@ import com.kdt.mcgui.ProgressLayout;
 
 import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.multirt.MultiRTUtils;
+import net.kdt.pojavlaunch.utils.Architecture;
 
 import org.apache.commons.io.FileUtils;
 
@@ -21,6 +22,9 @@ import java.io.IOException;
 import java.io.InputStream;
 
 public class AsyncAssetManager {
+
+    private static final String JAVA17_RUNTIME_NAME = "Internal-17";
+    private static final String JAVA17_ASSET = "components/jre-new/jre17-arm64-20210825-release.tar.xz";
 
     private AsyncAssetManager(){}
 
@@ -54,6 +58,33 @@ public class AsyncAssetManager {
                 MultiRTUtils.postPrepare("Internal");
             }catch (IOException e) {
                 Log.e("JREAuto", "Internal JRE unpack failed", e);
+            }
+        });
+
+        unpackJava17Runtime(am);
+    }
+
+    /**
+     * Install the complete arm64 Java 17 runtime supplied by the CI workflow.
+     * The Java 17 release is a full JRE archive, unlike the Java 8 binpack.
+     */
+    private static void unpackJava17Runtime(AssetManager am) {
+        if (Tools.DEVICE_ARCHITECTURE != Architecture.ARCH_ARM64) {
+            Log.w("JREAuto", "Java 17 runtime is currently available for arm64 only.");
+            return;
+        }
+
+        if (MultiRTUtils.forceReread(JAVA17_RUNTIME_NAME).versionString != null) return;
+
+        sExecutorService.execute(() -> {
+            try {
+                MultiRTUtils.installRuntimeNamed(
+                        Tools.NATIVE_LIB_DIR,
+                        am.open(JAVA17_ASSET),
+                        JAVA17_RUNTIME_NAME);
+                MultiRTUtils.postPrepare(JAVA17_RUNTIME_NAME);
+            } catch (IOException e) {
+                Log.e("JREAuto", "Internal-17 JRE unpack failed", e);
             }
         });
     }
