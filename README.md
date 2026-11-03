@@ -1,4 +1,3 @@
-::: {align="center"}
 # ⚔️ 2012scape Mobile
 
 ### Bringing the world of **Darkan/2012scape** to Android.
@@ -69,7 +68,3 @@ repository is a development project; it does not offer an authorized
 distribution of the game client.
 
 ------------------------------------------------------------------------
-
-::: {align="center"}
-**Built with curiosity, persistence, and a little Gielinor spirit.** ⚔️
-:::
