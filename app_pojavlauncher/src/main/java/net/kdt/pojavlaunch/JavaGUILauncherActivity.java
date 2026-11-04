@@ -405,6 +405,11 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             javaArgList.add("-Xmx1024m");
             javaArgList.add("-Dbot.enabled=false");
             javaArgList.add("-Dtoolkit=0");
+            // The client bundles glibc LWJGL natives that cannot load on Android (libpthread.so.0).
+            // Point LWJGL at Pojav's bionic build of liblwjgl.so instead.
+            javaArgList.add("-Dorg.lwjgl.librarypath=" + Tools.NATIVE_LIB_DIR);
+            Logger.appendToLog("Info: LWJGL native dir: " + Tools.NATIVE_LIB_DIR
+                    + " liblwjgl.so exists=" + new File(Tools.NATIVE_LIB_DIR, "liblwjgl.so").isFile());
             javaArgList.add("-jar");
             javaArgList.add(clientJar.getAbsolutePath());
             javaArgList.add(DarkanClientUpdater.LOBBY_HOST);
