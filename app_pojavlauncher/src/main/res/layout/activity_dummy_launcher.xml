@@ -61,6 +61,15 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintBottom_toTopOf="@+id/progress_layout" />
 
+    <Button
+        android:id="@+id/devExport"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="DEV: Export logs"
+        android:textAllCaps="false"
+        app:layout_constraintEnd_toStartOf="@+id/devHello"
+        app:layout_constraintBottom_toTopOf="@+id/progress_layout" />
+
     <com.kdt.mcgui.ProgressLayout
         android:id="@+id/progress_layout"
         android:layout_width="733dp"

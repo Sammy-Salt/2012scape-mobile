@@ -65,6 +65,23 @@ public class ScapeLauncher extends BaseActivity {
         // TEMPORARY developer test (remove once the Darkan client launches): run hello.jar on Java 17.
         findViewById(R.id.devHello).setOnClickListener(view -> runHelloJava17());
         showLastHelloResult();
+        findViewById(R.id.devExport).setOnClickListener(view -> exportLogs());
+    }
+
+    /** TEMPORARY: save logs and a folder listing to the public Download folder. */
+    private void exportLogs() {
+        new Thread(() -> {
+            try {
+                String name = "2012scape-log-"
+                        + new java.text.SimpleDateFormat("yyyyMMdd-HHmmss", java.util.Locale.US).format(new java.util.Date())
+                        + ".txt";
+                String where = DevLogExporter.saveToDownloads(this, name, DevLogExporter.build());
+                runOnUiThread(() -> Toast.makeText(this, "Saved to " + where, Toast.LENGTH_LONG).show());
+            } catch (Throwable t) {
+                Log.e("DarkanDev", "Log export failed", t);
+                runOnUiThread(() -> Toast.makeText(this, "Export failed: " + t, Toast.LENGTH_LONG).show());
+            }
+        }, "DarkanExport").start();
     }
 
     private File helloResultFile() {
