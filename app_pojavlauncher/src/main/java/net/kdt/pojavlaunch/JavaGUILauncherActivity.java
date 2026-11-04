@@ -146,6 +146,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         });
 
         mTextureView.setOnTouchListener((v, event) -> {
+            if (event.getActionMasked() != MotionEvent.ACTION_MOVE && touchLogCount++ < 60)
+                Logger.appendToLog("[Touch] texture action=" + event.getActionMasked() + " x=" + event.getX() + " y=" + event.getY());
             scaleGestureDetector.onTouchEvent(event);
             longPressDetector.onTouchEvent(event);
             float x = event.getX();
@@ -331,7 +333,10 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     }
 
     /** Left click, or one right click if the on-screen right-click button was armed. */
+    private int touchLogCount = 0;
+
     private void clickMouse() {
+        Logger.appendToLog("[Touch] click button=" + (rcState ? "right" : "left"));
         AWTInputBridge.sendMousePress(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
         if (rcState) clearRC();
     }
