@@ -408,7 +408,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             // The client bundles glibc LWJGL natives that cannot load on Android (libpthread.so.0), and LWJGL
             // always prefers a copy found on the classpath. So put Pojav's bionic builds in a folder laid out
             // like the jar's resources and place that folder BEFORE the client jar on the classpath.
-            File nativeCp = new File(darkanHome, "androidnatives");
+            // Must be in the app's private storage: Android refuses to load native code from shared storage.
+            File nativeCp = new File(Tools.DIR_DATA, "androidnatives");
             String[][] natives = {
                     {"liblwjgl.so", "linux/arm64/org/lwjgl/liblwjgl.so"},
                     {"liblwjgl_opengl.so", "linux/arm64/org/lwjgl/opengl/liblwjgl_opengl.so"},
