@@ -134,7 +134,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     if (action == MotionEvent.ACTION_POINTER_DOWN) {
                         if (event.getPointerCount() == 2) {
                             // Right-click when a second finger touches the screen
-                            AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON3_DOWN_MASK);
+                            tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
                         }
                     }
                 }
@@ -183,7 +183,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             public void onLongPress(MotionEvent e) {
                 // Right click at the pressed position (a real right mouse button, not the 2009 client's F11 trick)
                 sendScaledMousePosition(e.getX() + mTextureView.getX(), e.getY());
-                AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON3_DOWN_MASK);
+                tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
                 super.onLongPress(e);
             }
 
@@ -334,10 +334,25 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
     /** Left click, or one right click if the on-screen right-click button was armed. */
     private int touchLogCount = 0;
+    private final java.util.concurrent.ExecutorService mClickExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+
+    /** Press, hold and release a mouse button. The Darkan client samples button state once per frame,
+     *  so a press+release in the same millisecond is never seen as a click. */
+    private void tapMouse(final int downMask) {
+        mClickExecutor.execute(() -> {
+            try {
+                Thread.sleep(60);
+                AWTInputBridge.sendMousePress(downMask, true);
+                Thread.sleep(130);
+                AWTInputBridge.sendMousePress(downMask, false);
+            } catch (InterruptedException ignored) {
+            }
+        });
+    }
 
     private void clickMouse() {
         Logger.appendToLog("[Touch] click button=" + (rcState ? "right" : "left"));
-        AWTInputBridge.sendMousePress(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
+        tapMouse(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
         if (rcState) clearRC();
     }
 
