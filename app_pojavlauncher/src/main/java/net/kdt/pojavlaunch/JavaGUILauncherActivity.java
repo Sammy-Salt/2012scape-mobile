@@ -446,6 +446,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             // -cp instead of -jar ignores the jar manifest, so repeat its Add-Opens/Add-Exports.
             javaArgList.add("--add-opens=java.desktop/java.awt=ALL-UNNAMED");
             javaArgList.add("--add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED");
+            javaArgList.add("-XX:ErrorFile=" + new File(darkanHome, "logs/hs_err_%p.log").getAbsolutePath());
+            javaArgList.add("-XX:+ShowCodeDetailsInExceptionMessages");
             // TEMPORARY diagnostic: thread dumps to <darkanHome>/logs/watchdog-threads.txt (loaded by AWT).
             File watchdogJar = new File(Tools.DIR_DATA, "watchdog.jar");
             File watchdogOut = new File(darkanHome, "logs/watchdog-threads.txt");
