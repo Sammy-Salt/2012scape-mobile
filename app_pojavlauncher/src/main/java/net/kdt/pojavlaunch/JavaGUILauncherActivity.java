@@ -334,20 +334,14 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
     /** Left click, or one right click if the on-screen right-click button was armed. */
     private int touchLogCount = 0;
-    private final java.util.concurrent.ExecutorService mClickExecutor = java.util.concurrent.Executors.newSingleThreadExecutor();
+    private final android.os.Handler mClickHandler = new android.os.Handler(android.os.Looper.getMainLooper());
 
     /** Press, hold and release a mouse button. The Darkan client samples button state once per frame,
-     *  so a press+release in the same millisecond is never seen as a click. */
+     *  so a press+release in the same millisecond is never seen as a click.
+     *  Everything stays on the UI thread: the native input bridge must not be called from other Java threads. */
     private void tapMouse(final int downMask) {
-        mClickExecutor.execute(() -> {
-            try {
-                Thread.sleep(60);
-                AWTInputBridge.sendMousePress(downMask, true);
-                Thread.sleep(130);
-                AWTInputBridge.sendMousePress(downMask, false);
-            } catch (InterruptedException ignored) {
-            }
-        });
+        mClickHandler.postDelayed(() -> AWTInputBridge.sendMousePress(downMask, true), 60);
+        mClickHandler.postDelayed(() -> AWTInputBridge.sendMousePress(downMask, false), 190);
     }
 
     private void clickMouse() {
