@@ -405,13 +405,33 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             javaArgList.add("-Xmx1024m");
             javaArgList.add("-Dbot.enabled=false");
             javaArgList.add("-Dtoolkit=0");
-            // The client bundles glibc LWJGL natives that cannot load on Android (libpthread.so.0).
-            // Point LWJGL at Pojav's bionic build of liblwjgl.so instead.
-            javaArgList.add("-Dorg.lwjgl.librarypath=" + Tools.NATIVE_LIB_DIR);
-            Logger.appendToLog("Info: LWJGL native dir: " + Tools.NATIVE_LIB_DIR
-                    + " liblwjgl.so exists=" + new File(Tools.NATIVE_LIB_DIR, "liblwjgl.so").isFile());
-            javaArgList.add("-jar");
-            javaArgList.add(clientJar.getAbsolutePath());
+            // The client bundles glibc LWJGL natives that cannot load on Android (libpthread.so.0), and LWJGL
+            // always prefers a copy found on the classpath. So put Pojav's bionic builds in a folder laid out
+            // like the jar's resources and place that folder BEFORE the client jar on the classpath.
+            File nativeCp = new File(darkanHome, "androidnatives");
+            String[][] natives = {
+                    {"liblwjgl.so", "linux/arm64/org/lwjgl/liblwjgl.so"},
+                    {"liblwjgl_opengl.so", "linux/arm64/org/lwjgl/opengl/liblwjgl_opengl.so"},
+                    {"liblwjgl_stb.so", "linux/arm64/org/lwjgl/stb/liblwjgl_stb.so"},
+            };
+            for (String[] n : natives) {
+                File src = new File(Tools.NATIVE_LIB_DIR, n[0]);
+                File dst = new File(nativeCp, n[1]);
+                if (!src.isFile()) {
+                    Logger.appendToLog("Warn: missing Android native " + src);
+                    continue;
+                }
+                dst.getParentFile().mkdirs();
+                java.nio.file.Files.copy(src.toPath(), dst.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                Logger.appendToLog("Info: LWJGL native ready: " + dst);
+            }
+
+            // -cp instead of -jar ignores the jar manifest, so repeat its Add-Opens/Add-Exports.
+            javaArgList.add("--add-opens=java.desktop/java.awt=ALL-UNNAMED");
+            javaArgList.add("--add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED");
+            javaArgList.add("-cp");
+            javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath());
+            javaArgList.add("com.darkan.bot.BotKt");
             javaArgList.add(DarkanClientUpdater.LOBBY_HOST);
             javaArgList.add(String.valueOf(DarkanClientUpdater.LOBBY_PORT));
             gamedir = darkanHome;
