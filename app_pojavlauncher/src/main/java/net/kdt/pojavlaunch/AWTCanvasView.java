@@ -12,8 +12,10 @@ import net.kdt.pojavlaunch.Tools;
 import net.kdt.pojavlaunch.utils.*;
 
 public class AWTCanvasView extends TextureView implements TextureView.SurfaceTextureListener, Runnable {
-    public static final int AWT_CANVAS_WIDTH = 765;
-    public static final int AWT_CANVAS_HEIGHT = 503;
+    // The Darkan client's fixed-size window is 765x503 plus the window frame (title bar and borders),
+    // so the virtual screen must be larger or the right and bottom edges are cut off.
+    public static final int AWT_CANVAS_WIDTH = 800;
+    public static final int AWT_CANVAS_HEIGHT = 560;
     private static final double NANOS = 1000000000.0;
     private boolean mIsDestroyed = false;
     private final LinkedList<Long> mTimes = new LinkedList<Long>(){{add(System.nanoTime());}};

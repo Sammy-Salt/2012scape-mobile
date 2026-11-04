@@ -437,10 +437,9 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             watchdogOut.getParentFile().mkdirs();
             watchdogOut.delete();
             javaArgList.add("-Dwatchdog.out=" + watchdogOut.getAbsolutePath());
-            javaArgList.add("-Djavax.accessibility.assistive_technologies=WatchdogAT");
             javaArgList.add("-cp");
             javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath() + ":" + watchdogJar.getAbsolutePath());
-            javaArgList.add("com.darkan.bot.BotKt");
+            javaArgList.add("DevMain"); // wrapper that starts the watchdog, then calls com.darkan.bot.BotKt.main
             javaArgList.add(DarkanClientUpdater.LOBBY_HOST);
             javaArgList.add(String.valueOf(DarkanClientUpdater.LOBBY_PORT));
             gamedir = darkanHome;
