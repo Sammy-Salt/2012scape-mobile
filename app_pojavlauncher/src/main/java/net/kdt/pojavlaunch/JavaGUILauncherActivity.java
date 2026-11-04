@@ -134,7 +134,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     if (action == MotionEvent.ACTION_POINTER_DOWN) {
                         if (event.getPointerCount() == 2) {
                             // Right-click when a second finger touches the screen
-                            tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
+                            tapMouse(AWTInputEvent.BUTTON3_MASK);
                         }
                     }
                 }
@@ -183,7 +183,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             public void onLongPress(MotionEvent e) {
                 // Right click at the pressed position (a real right mouse button, not the 2009 client's F11 trick)
                 sendScaledMousePosition(e.getX() + mTextureView.getX(), e.getY());
-                tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
+                tapMouse(AWTInputEvent.BUTTON3_MASK);
                 super.onLongPress(e);
             }
 
@@ -352,7 +352,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
     private void clickMouse() {
         Logger.appendToLog("[Touch] click button=" + (rcState ? "right" : "left"));
-        tapMouse(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
+        tapMouse(rcState ? AWTInputEvent.BUTTON3_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
         if (rcState) clearRC();
     }
 
