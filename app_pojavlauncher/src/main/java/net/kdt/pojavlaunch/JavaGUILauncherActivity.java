@@ -122,10 +122,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
                 if (mGestureDetector.onTouchEvent(event)) {
                     sendScaledMousePosition(mouseX,mouseY);
-                    AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
-                    if(rcState) {
-                        clearRC();
-                    }
+                    clickMouse();
                 } else {
                     if (action == MotionEvent.ACTION_MOVE) { // 2
                         mouseX = Math.max(0, Math.min(currentDisplayMetrics.widthPixels, mouseX + (x - prevX) * mouseSpeed));
@@ -136,10 +133,8 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     // Check if there are two fingers on the screen
                     if (action == MotionEvent.ACTION_POINTER_DOWN) {
                         if (event.getPointerCount() == 2) {
-                            // Right-click event when a second finger touches the screen
-                            // Simulating right-click by sending GLFW_MOUSE_BUTTON_RIGHT event
-                            AWTInputBridge.sendKey((char)AWTInputEvent.VK_F11,AWTInputEvent.VK_F11);
-                            AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
+                            // Right-click when a second finger touches the screen
+                            AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON3_DOWN_MASK);
                         }
                     }
                 }
@@ -157,10 +152,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             float y = event.getY();
             if (mGestureDetector.onTouchEvent(event)) {
                 sendScaledMousePosition(x + mTextureView.getX(), y);
-                AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
-                if(rcState) {
-                    clearRC();
-                }
+                clickMouse();
                 return true;
             }
 
@@ -187,9 +179,9 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         longPressDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public void onLongPress(MotionEvent e) {
-                // Send RightClick
-                AWTInputBridge.sendKey((char)AWTInputEvent.VK_F11,AWTInputEvent.VK_F11);
-                AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON1_DOWN_MASK);
+                // Right click at the pressed position (a real right mouse button, not the 2009 client's F11 trick)
+                sendScaledMousePosition(e.getX() + mTextureView.getX(), e.getY());
+                AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON3_DOWN_MASK);
                 super.onLongPress(e);
             }
 
@@ -338,16 +330,20 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         mMousePointerImageView.setY(y);
     }
 
+    /** Left click, or one right click if the on-screen right-click button was armed. */
+    private void clickMouse() {
+        AWTInputBridge.sendMousePress(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
+        if (rcState) clearRC();
+    }
+
     private void clearRC(){
         rcState = false;
-        findViewById(R.id.mb2).setBackground(getResources().getDrawable( R.drawable.control_button_normal ));
-        AWTInputBridge.sendKey((char)AWTInputEvent.VK_F10,AWTInputEvent.VK_F10);
+        runOnUiThread(() -> findViewById(R.id.mb2).setBackground(getResources().getDrawable( R.drawable.control_button_normal )));
     }
 
     private void activateRC(){
         rcState = true;
         findViewById(R.id.mb2).setBackground(getResources().getDrawable( R.drawable.control_button_pressed ));
-        AWTInputBridge.sendKey((char)AWTInputEvent.VK_F11,AWTInputEvent.VK_F11);
     }
 
     @SuppressWarnings("SuspiciousNameCombination")
