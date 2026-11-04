@@ -38,7 +38,7 @@ public final class DevLogExporter {
         File[] logs = clientLogs.listFiles();
         if (logs != null) {
             Arrays.sort(logs, Comparator.comparingLong(File::lastModified).reversed());
-            for (int i = 0; i < Math.min(3, logs.length); i++) {
+            for (int i = 0; i < Math.min(5, logs.length); i++) {
                 section(sb, "client log " + logs[i].getName(), logs[i], 200 * 1024);
             }
         }

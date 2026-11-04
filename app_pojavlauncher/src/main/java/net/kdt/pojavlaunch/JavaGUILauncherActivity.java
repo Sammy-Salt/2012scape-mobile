@@ -452,6 +452,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             Tools.copyAssetFile(this, "dev/watchdog.jar", Tools.DIR_DATA, true);
             watchdogOut.getParentFile().mkdirs();
             watchdogOut.delete();
+            new File(darkanHome, "logs/exit-trace.txt").delete();
             javaArgList.add("-Dwatchdog.out=" + watchdogOut.getAbsolutePath());
             javaArgList.add("-cp");
             javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath() + ":" + watchdogJar.getAbsolutePath());
