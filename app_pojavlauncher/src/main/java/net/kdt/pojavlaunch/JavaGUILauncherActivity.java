@@ -394,11 +394,22 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             Tools.getCacioJavaArgs(javaArgList, false);
             Logger.appendToLog("Info: Selected Java runtime: " + runtime.name
                     + " (Java " + runtime.javaVersion + ")");
-            javaArgList.add("-DconfigFile="+Tools.DIR_DATA + "/config.json");
-            javaArgList.add("-DpluginDir="+ Tools.DIR_DATA + "/plugins/");
-            javaArgList.add("-DclientHomeOverride="+gamedir);
+            File darkanHome = new File(Tools.DIR_GAME_HOME, ".darkanrs");
+            if (!darkanHome.isDirectory() && !darkanHome.mkdirs()) {
+                throw new IllegalStateException("Cannot create " + darkanHome);
+            }
+            File clientJar = DarkanClientUpdater.ensureClient(darkanHome);
+
+            // Safe (software) renderer: toolkit 0 needs no native OpenGL library.
+            javaArgList.add("-Xms256m");
+            javaArgList.add("-Xmx1024m");
+            javaArgList.add("-Dbot.enabled=false");
+            javaArgList.add("-Dtoolkit=0");
             javaArgList.add("-jar");
-            javaArgList.add(Tools.DIR_DATA+"/rt4.jar");
+            javaArgList.add(clientJar.getAbsolutePath());
+            javaArgList.add(DarkanClientUpdater.LOBBY_HOST);
+            javaArgList.add(String.valueOf(DarkanClientUpdater.LOBBY_PORT));
+            gamedir = darkanHome;
 
             Logger.appendToLog("Info: Java arguments: " + Arrays.toString(javaArgList.toArray(new String[0])));
 
