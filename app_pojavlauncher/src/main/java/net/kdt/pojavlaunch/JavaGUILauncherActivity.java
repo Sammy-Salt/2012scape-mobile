@@ -430,8 +430,16 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             // -cp instead of -jar ignores the jar manifest, so repeat its Add-Opens/Add-Exports.
             javaArgList.add("--add-opens=java.desktop/java.awt=ALL-UNNAMED");
             javaArgList.add("--add-exports=java.desktop/sun.awt.X11=ALL-UNNAMED");
+            // TEMPORARY diagnostic: thread dumps to <darkanHome>/logs/watchdog-threads.txt (loaded by AWT).
+            File watchdogJar = new File(Tools.DIR_DATA, "watchdog.jar");
+            File watchdogOut = new File(darkanHome, "logs/watchdog-threads.txt");
+            Tools.copyAssetFile(this, "dev/watchdog.jar", Tools.DIR_DATA, true);
+            watchdogOut.getParentFile().mkdirs();
+            watchdogOut.delete();
+            javaArgList.add("-Dwatchdog.out=" + watchdogOut.getAbsolutePath());
+            javaArgList.add("-Djavax.accessibility.assistive_technologies=WatchdogAT");
             javaArgList.add("-cp");
-            javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath());
+            javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath() + ":" + watchdogJar.getAbsolutePath());
             javaArgList.add("com.darkan.bot.BotKt");
             javaArgList.add(DarkanClientUpdater.LOBBY_HOST);
             javaArgList.add(String.valueOf(DarkanClientUpdater.LOBBY_PORT));
