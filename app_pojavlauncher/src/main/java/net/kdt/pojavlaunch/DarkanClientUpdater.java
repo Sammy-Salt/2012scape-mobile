@@ -63,13 +63,13 @@ public final class DarkanClientUpdater {
 
         try {
             log("Checking the Darkan client (" + PACKAGE_VERSION + ") on GitLab...");
-            String remoteSha = fetchRemoteSha256();
-            log("Remote client sha256: " + remoteSha);
-            if (installedJar != null && remoteSha.equalsIgnoreCase(installedSha)) {
+            Remote remote = fetchRemote();
+            log("Remote client: " + remote.fileName + " sha256 " + remote.sha);
+            if (installedJar != null && remote.sha.equalsIgnoreCase(installedSha)) {
                 log("Client is up to date: " + installedJar.getName());
                 return installedJar;
             }
-            return download(clientDir, meta, remoteSha);
+            return download(clientDir, meta, remote);
         } catch (IOException | org.json.JSONException e) {
             log("Update check/download failed: " + e);
             if (installedJar != null) {
@@ -80,7 +80,20 @@ public final class DarkanClientUpdater {
         }
     }
 
-    private static String fetchRemoteSha256() throws IOException, org.json.JSONException {
+    /** sha256 and the file name to download (the per-commit sibling when present, else darkan-client.jar). */
+    private static final class Remote {
+        String sha;
+        String fileName;
+    }
+
+    private static boolean newer(JSONObject a, JSONObject b) {
+        // true if a is newer than b (created_at, then id), like the official launcher
+        String ca = a.optString("created_at", ""), cb = b.optString("created_at", "");
+        int c = ca.compareTo(cb);
+        return c != 0 ? c > 0 : a.optLong("id", 0) > b.optLong("id", 0);
+    }
+
+    private static Remote fetchRemote() throws IOException, org.json.JSONException {
         String listUrl = API + "/packages?package_type=generic&package_name=" + PACKAGE_NAME
                 + "&package_version=" + PACKAGE_VERSION + "&order_by=created_at&sort=desc";
         JSONArray packages = new JSONArray(httpGetText(listUrl));
@@ -94,28 +107,45 @@ public final class DarkanClientUpdater {
         }
         if (packageId < 0) throw new IOException("Package " + PACKAGE_NAME + " " + PACKAGE_VERSION + " not found");
 
-        JSONArray files = new JSONArray(httpGetText(API + "/packages/" + packageId + "/package_files?per_page=100"));
-        String bestSha = null;
-        long bestId = -1;
-        for (int i = 0; i < files.length(); i++) {
-            JSONObject f = files.getJSONObject(i);
-            if (!FILE_NAME.equals(f.optString("file_name"))) continue;
-            String sha = f.optString("file_sha256", "");
-            if (sha.length() != 64) continue;
-            long id = f.optLong("id", 0);
-            if (id >= bestId) {
-                bestId = id;
-                bestSha = sha;
-            }
+        // The package holds many files (every build adds some) across several pages: read them all.
+        java.util.List<JSONObject> files = new java.util.ArrayList<>();
+        for (int page = 1; page <= 50; page++) {
+            JSONArray arr = new JSONArray(httpGetText(API + "/packages/" + packageId
+                    + "/package_files?per_page=100&order_by=created_at&sort=desc&page=" + page));
+            if (arr.length() == 0) break;
+            for (int i = 0; i < arr.length(); i++) files.add(arr.getJSONObject(i));
+            if (arr.length() < 100) break;
         }
-        if (bestSha == null) throw new IOException("No " + FILE_NAME + " with a sha256 in package " + packageId);
-        return bestSha.toLowerCase(Locale.ROOT);
+        log("Registry lists " + files.size() + " files");
+
+        JSONObject newest = null;
+        for (JSONObject f : files) {
+            if (!FILE_NAME.equals(f.optString("file_name"))) continue;
+            if (f.optString("file_sha256", "").length() != 64) continue;
+            if (newest == null || newer(f, newest)) newest = f;
+        }
+        if (newest == null) throw new IOException("No " + FILE_NAME + " with a sha256 in package " + packageId);
+
+        Remote r = new Remote();
+        r.sha = newest.getString("file_sha256").toLowerCase(Locale.ROOT);
+        r.fileName = FILE_NAME;
+        // Prefer the per-commit copy: a later CI run cannot overwrite it mid-download.
+        JSONObject sibling = null;
+        for (JSONObject f : files) {
+            String n = f.optString("file_name");
+            if (!n.startsWith("darkan-client-dev-") || !n.endsWith(".jar")) continue;
+            if (!r.sha.equalsIgnoreCase(f.optString("file_sha256", ""))) continue;
+            if (sibling == null || newer(f, sibling)) sibling = f;
+        }
+        if (sibling != null) r.fileName = sibling.getString("file_name");
+        return r;
     }
 
-    private static File download(File clientDir, File meta, String expectedSha) throws IOException {
-        String url = API + "/packages/generic/" + PACKAGE_NAME + "/" + PACKAGE_VERSION + "/" + FILE_NAME;
+    private static File download(File clientDir, File meta, Remote remote) throws IOException {
+        String expectedSha = remote.sha;
+        String url = API + "/packages/generic/" + PACKAGE_NAME + "/" + PACKAGE_VERSION + "/" + remote.fileName;
         File part = new File(clientDir, "download.part");
-        log("Downloading the client (about 95 MB)...");
+        log("Downloading " + remote.fileName + " (about 95 MB)...");
         MessageDigest md;
         try {
             md = MessageDigest.getInstance("SHA-256");
