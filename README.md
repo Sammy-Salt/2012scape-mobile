@@ -62,6 +62,9 @@ This is an **unofficial, independent project** and is not affiliated
 with, endorsed by, or sponsored by Jagex. RuneScape is a trademark of
 Jagex Ltd.
 
+Unofficial, unsupported, and unethical launcher for Darkan/2012Scape on Android. Based on 2009scape mobile, which is based on Pojav/Boardwalk. 2012scape Mobile is not endorsed by Jagex, Darkan, the entire world, and everyone, and every company in it.
+NOBODY ENDORSES THIS
+
 Darkan and its related services are the work of their respective
 developers. Please respect their terms, assets, and licensing. This
 repository is a development project; it does not offer an authorized
