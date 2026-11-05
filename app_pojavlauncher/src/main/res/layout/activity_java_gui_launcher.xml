@@ -121,12 +121,14 @@
 				app:layout_constraintBottom_toTopOf="@id/mb2Frame"
 				app:layout_constraintStart_toStartOf="@id/mb2Frame">
 
-				<ImageView
-					android:layout_width="20dp"
-					android:layout_height="20dp"
+				<TextView
+					android:layout_width="wrap_content"
+					android:layout_height="wrap_content"
 					android:layout_gravity="center"
-					android:scaleType="fitCenter"
-					android:src="@drawable/ic_camera" />
+					android:text="ID"
+					android:textColor="#FFFFFF"
+					android:textStyle="bold"
+					android:textSize="11sp" />
 
 				<Button
 					android:id="@+id/camera"

@@ -9,6 +9,7 @@ import android.annotation.SuppressLint;
 import android.content.ClipboardManager;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.app.AlertDialog;
 import android.util.Log;
 import android.view.GestureDetector;
 import android.view.KeyEvent;
@@ -135,7 +136,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     if (action == MotionEvent.ACTION_POINTER_DOWN) {
                         if (event.getPointerCount() == 2) {
                             // Right-click when a second finger touches the screen
-                            tapMouse(AWTInputEvent.BUTTON3_MASK);
+                            tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
                         }
                     }
                 }
@@ -160,18 +161,26 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             }
 
             switch (event.getActionMasked()) {
+                case MotionEvent.ACTION_DOWN:
+                    mDownX = x; mDownY = y;
+                    break;
                 case MotionEvent.ACTION_UP: // 1
                 case MotionEvent.ACTION_CANCEL: // 3
-                case MotionEvent.ACTION_POINTER_UP: // 6
-                    releaseCameraKeys();
+                    endCameraDrag();
                     break;
                 case MotionEvent.ACTION_MOVE: // 2
-                    sendScaledMousePosition(x + mTextureView.getX(), y);
-                    try {
-                        panCamera(prevX-x, prevY-y);
-                    } catch (InterruptedException e) {
-                        throw new RuntimeException(e);
+                    if (event.getPointerCount() > 1) break;
+                    if (!mDraggingCamera) {
+                        float slop = 24f;
+                        if (Math.abs(x - mDownX) > slop || Math.abs(y - mDownY) > slop) {
+                            // Drag = hold the middle mouse button and move: the client turns the camera
+                            // proportionally to the movement, like on a PC.
+                            sendScaledMousePosition(mDownX + mTextureView.getX(), mDownY);
+                            AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON2_DOWN_MASK, true);
+                            mDraggingCamera = true;
+                        }
                     }
+                    if (mDraggingCamera) sendScaledMousePosition(x + mTextureView.getX(), y);
                     break;
             }
 
@@ -185,7 +194,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             public void onLongPress(MotionEvent e) {
                 // Right click at the pressed position (a real right mouse button, not the 2009 client's F11 trick)
                 sendScaledMousePosition(e.getX() + mTextureView.getX(), e.getY());
-                tapMouse(AWTInputEvent.BUTTON3_MASK);
+                tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
                 super.onLongPress(e);
             }
 
@@ -231,6 +240,16 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             }, "Installer").start();
         } catch (Throwable th) {
             Tools.showError(this, th, true);
+        }
+    }
+
+    private boolean mDraggingCamera = false;
+    private float mDownX, mDownY;
+
+    private void endCameraDrag() {
+        if (mDraggingCamera) {
+            mDraggingCamera = false;
+            AWTInputBridge.sendMousePress(AWTInputEvent.BUTTON2_DOWN_MASK, false);
         }
     }
 
@@ -306,15 +325,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     }
                     break;
                 case R.id.camera:
-                    if (!cameraMode) { // Camera Mode On
-                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F9, AWTInputEvent.VK_F9); // Send F9
-                        cameraMode = true;
-                        findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_pressed ));
-                    } else { // Camera Mode off
-                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F8, AWTInputEvent.VK_F8);
-                        cameraMode = false;
-                        findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_normal ));
-                    }
+                    showLoginDialog();
                     break;
                 case R.id.mouseMode:
                     toggleVirtualMouse();
@@ -330,6 +341,58 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             KeyEncoder.sendAndroidKey(event.getKeyCode(),(char)event.getUnicodeChar());
         }
         return true;
+    }
+
+    // ---- Saved login (stored privately in this app only) ----
+    private void showLoginDialog() {
+        final android.content.SharedPreferences prefs = getSharedPreferences("darkan_login", MODE_PRIVATE);
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        final android.widget.EditText user = new android.widget.EditText(this);
+        user.setHint("Username or email");
+        user.setSingleLine(true);
+        user.setText(prefs.getString("user", ""));
+        final android.widget.EditText pass = new android.widget.EditText(this);
+        pass.setHint("Password");
+        pass.setSingleLine(true);
+        pass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        pass.setText(prefs.getString("pass", ""));
+        box.addView(user);
+        box.addView(pass);
+        new AlertDialog.Builder(this)
+                .setTitle("Saved login")
+                .setMessage("Open the game's login screen first, then tap Type into game. It types the saved name, presses Tab, then types the password.")
+                .setView(box)
+                .setPositiveButton("Save & type into game", (d, w) -> {
+                    prefs.edit().putString("user", user.getText().toString()).putString("pass", pass.getText().toString()).apply();
+                    typeLogin(user.getText().toString(), pass.getText().toString());
+                })
+                .setNeutralButton("Forget", (d, w) -> prefs.edit().clear().apply())
+                .setNegativeButton("Cancel", null)
+                .show();
+    }
+
+    /** Types into the game on the UI thread, a few characters at a time. */
+    private void typeLogin(String user, String pass) {
+        final java.util.ArrayList<Runnable> steps = new java.util.ArrayList<>();
+        for (int i = 0; i < 30; i++) steps.add(KeyEncoder::sendUnicodeBackspace);
+        for (char c : user.toCharArray()) { final char cc = c; steps.add(() -> KeyEncoder.sendEncodedChar(cc, cc)); }
+        steps.add(() -> AWTInputBridge.sendKey((char) 0, 9));
+        for (int i = 0; i < 30; i++) steps.add(KeyEncoder::sendUnicodeBackspace);
+        for (char c : pass.toCharArray()) { final char cc = c; steps.add(() -> KeyEncoder.sendEncodedChar(cc, cc)); }
+        long t = 50;
+        for (Runnable r : steps) { mClickHandler.postDelayed(r, t); t += 30; }
+    }
+
+    @Override
+    public void onBackPressed() {
+        new AlertDialog.Builder(this)
+                .setMessage("Quit the game?")
+                .setPositiveButton("Quit", (d, w) -> fullyExit())
+                .setNegativeButton("Stay", null)
+                .show();
     }
 
     public void placeMouseAt(float x, float y) {
@@ -351,7 +414,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
 
     private void clickMouse() {
         Logger.appendToLog("[Touch] click button=" + (rcState ? "right" : "left"));
-        tapMouse(rcState ? AWTInputEvent.BUTTON3_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
+        tapMouse(rcState ? AWTInputEvent.BUTTON3_DOWN_MASK : AWTInputEvent.BUTTON1_DOWN_MASK);
         if (rcState) clearRC();
     }
 

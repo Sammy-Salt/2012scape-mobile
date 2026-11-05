@@ -27,8 +27,8 @@ import net.kdt.pojavlaunch.services.ProgressServiceKeeper;
 public class ScapeLauncher extends BaseActivity {
 
     private TextView settings;
-    private Button playHD;
-    private Button playSD;
+    private Button playOnline;
+    private Button playOffline;
     private static final int FILE_SELECT_CODE_JSON = 0;
     private static final int FILE_SELECT_CODE_ZIP = 1;
     private ProgressServiceKeeper mProgressServiceKeeper;
@@ -39,8 +39,8 @@ public class ScapeLauncher extends BaseActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_dummy_launcher);
         settings = findViewById(R.id.settings);
-        playHD = findViewById(R.id.playHD);
-        playSD = findViewById(R.id.playSD);
+        playOnline = findViewById(R.id.playOnline);
+        playOffline = findViewById(R.id.playOffline);
         mProgressLayout = findViewById(R.id.progress_layout);
 
         ProgressKeeper.addTaskCountListener((mProgressServiceKeeper = new ProgressServiceKeeper(this)));
@@ -49,17 +49,15 @@ public class ScapeLauncher extends BaseActivity {
         mProgressLayout.observe(ProgressLayout.UNPACK_RUNTIME);
         mProgressLayout.observe(ProgressLayout.INSTALL_MODPACK);
 
-        playHD.setOnClickListener(view -> {
-            if(!runtimeReady()) return;
-            Intent intent = new Intent(ScapeLauncher.this, MainActivity.class);
-            startActivity(intent);
-        });
-
-        playSD.setOnClickListener(view -> {
+        playOnline.setOnClickListener(view -> {
             if(!runtimeReady()) return;
             Intent intent = new Intent(ScapeLauncher.this, JavaGUILauncherActivity.class);
             startActivity(intent);
         });
+
+        // Single-player / offline mode is a later milestone.
+        playOffline.setOnClickListener(view ->
+                Toast.makeText(this, "Offline single-player is coming in a later version.", Toast.LENGTH_SHORT).show());
         settings.setOnClickListener(view -> showBottomDialog());
 
         // TEMPORARY developer test (remove once the Darkan client launches): run hello.jar on Java 17.
