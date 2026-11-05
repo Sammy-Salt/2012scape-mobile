@@ -59,11 +59,54 @@ public class ScapeLauncher extends BaseActivity {
         playOffline.setOnClickListener(view ->
                 Toast.makeText(this, "Offline single-player is coming in a later version.", Toast.LENGTH_SHORT).show());
         settings.setOnClickListener(view -> showBottomDialog());
+        findViewById(R.id.savedLogin).setOnClickListener(view -> showSavedLoginDialog());
 
         // TEMPORARY developer test (remove once the Darkan client launches): run hello.jar on Java 17.
         findViewById(R.id.devHello).setOnClickListener(view -> runHelloJava17());
         showLastHelloResult();
         findViewById(R.id.devExport).setOnClickListener(view -> exportLogs());
+    }
+
+    private void showSavedLoginDialog() {
+        final String[] cur = SavedLogin.load();
+        final android.widget.LinearLayout box = new android.widget.LinearLayout(this);
+        box.setOrientation(android.widget.LinearLayout.VERTICAL);
+        int pad = (int) (16 * getResources().getDisplayMetrics().density);
+        box.setPadding(pad, pad / 2, pad, 0);
+        final android.widget.EditText user = new android.widget.EditText(this);
+        user.setHint("Username or email");
+        user.setSingleLine(true);
+        user.setText(cur[0]);
+        final android.widget.EditText pass = new android.widget.EditText(this);
+        pass.setHint("Password");
+        pass.setSingleLine(true);
+        pass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
+        pass.setText(cur[1]);
+        final android.widget.CheckBox auto = new android.widget.CheckBox(this);
+        auto.setText("Press Log In for me");
+        auto.setChecked("1".equals(cur[2]));
+        box.addView(user);
+        box.addView(pass);
+        box.addView(auto);
+        new AlertDialog.Builder(this)
+                .setTitle("Remember login")
+                .setMessage("Saved only inside this app on your phone. It is typed into the game's login screen when it appears.")
+                .setView(box)
+                .setPositiveButton("Save", (d, w) -> {
+                    try {
+                        if (user.getText().length() == 0) SavedLogin.forget();
+                        else SavedLogin.save(user.getText().toString(), pass.getText().toString(), auto.isChecked());
+                        Toast.makeText(this, "Saved", Toast.LENGTH_SHORT).show();
+                    } catch (Exception e) {
+                        Toast.makeText(this, "Could not save: " + e, Toast.LENGTH_LONG).show();
+                    }
+                })
+                .setNeutralButton("Forget", (d, w) -> {
+                    SavedLogin.forget();
+                    Toast.makeText(this, "Login forgotten", Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton("Cancel", null)
+                .show();
     }
 
     /** TEMPORARY: save logs and a folder listing to the public Download folder. */

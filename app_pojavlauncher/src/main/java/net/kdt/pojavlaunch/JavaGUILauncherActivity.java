@@ -325,7 +325,15 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     }
                     break;
                 case R.id.camera:
-                    showLoginDialog();
+                    if (!cameraMode) { // Camera Mode On
+                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F9, AWTInputEvent.VK_F9); // Send F9
+                        cameraMode = true;
+                        findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_pressed ));
+                    } else { // Camera Mode off
+                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F8, AWTInputEvent.VK_F8);
+                        cameraMode = false;
+                        findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_normal ));
+                    }
                     break;
                 case R.id.mouseMode:
                     toggleVirtualMouse();
@@ -341,49 +349,6 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             KeyEncoder.sendAndroidKey(event.getKeyCode(),(char)event.getUnicodeChar());
         }
         return true;
-    }
-
-    // ---- Saved login (stored privately in this app only) ----
-    private void showLoginDialog() {
-        final android.content.SharedPreferences prefs = getSharedPreferences("darkan_login", MODE_PRIVATE);
-        final android.widget.LinearLayout box = new android.widget.LinearLayout(this);
-        box.setOrientation(android.widget.LinearLayout.VERTICAL);
-        int pad = (int) (16 * getResources().getDisplayMetrics().density);
-        box.setPadding(pad, pad / 2, pad, 0);
-        final android.widget.EditText user = new android.widget.EditText(this);
-        user.setHint("Username or email");
-        user.setSingleLine(true);
-        user.setText(prefs.getString("user", ""));
-        final android.widget.EditText pass = new android.widget.EditText(this);
-        pass.setHint("Password");
-        pass.setSingleLine(true);
-        pass.setInputType(android.text.InputType.TYPE_CLASS_TEXT | android.text.InputType.TYPE_TEXT_VARIATION_PASSWORD);
-        pass.setText(prefs.getString("pass", ""));
-        box.addView(user);
-        box.addView(pass);
-        new AlertDialog.Builder(this)
-                .setTitle("Saved login")
-                .setMessage("Open the game's login screen first, then tap Type into game. It types the saved name, presses Tab, then types the password.")
-                .setView(box)
-                .setPositiveButton("Save & type into game", (d, w) -> {
-                    prefs.edit().putString("user", user.getText().toString()).putString("pass", pass.getText().toString()).apply();
-                    typeLogin(user.getText().toString(), pass.getText().toString());
-                })
-                .setNeutralButton("Forget", (d, w) -> prefs.edit().clear().apply())
-                .setNegativeButton("Cancel", null)
-                .show();
-    }
-
-    /** Types into the game on the UI thread, a few characters at a time. */
-    private void typeLogin(String user, String pass) {
-        final java.util.ArrayList<Runnable> steps = new java.util.ArrayList<>();
-        for (int i = 0; i < 30; i++) steps.add(KeyEncoder::sendUnicodeBackspace);
-        for (char c : user.toCharArray()) { final char cc = c; steps.add(() -> KeyEncoder.sendEncodedChar(cc, cc)); }
-        steps.add(() -> AWTInputBridge.sendKey((char) 0, 9));
-        for (int i = 0; i < 30; i++) steps.add(KeyEncoder::sendUnicodeBackspace);
-        for (char c : pass.toCharArray()) { final char cc = c; steps.add(() -> KeyEncoder.sendEncodedChar(cc, cc)); }
-        long t = 50;
-        for (Runnable r : steps) { mClickHandler.postDelayed(r, t); t += 30; }
     }
 
     @Override
@@ -518,6 +483,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             watchdogOut.delete();
             new File(darkanHome, "logs/exit-trace.txt").delete();
             javaArgList.add("-Dwatchdog.out=" + watchdogOut.getAbsolutePath());
+            javaArgList.add("-Ddarkan.login=" + SavedLogin.file().getAbsolutePath());
             javaArgList.add("-cp");
             javaArgList.add(nativeCp.getAbsolutePath() + ":" + clientJar.getAbsolutePath() + ":" + watchdogJar.getAbsolutePath());
             javaArgList.add("DevMain"); // wrapper that starts the watchdog, then calls com.darkan.bot.BotKt.main
