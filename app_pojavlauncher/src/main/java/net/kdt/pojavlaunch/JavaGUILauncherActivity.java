@@ -154,7 +154,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
             longPressDetector.onTouchEvent(event);
             float x = event.getX();
             float y = event.getY();
-            if (mGestureDetector.onTouchEvent(event)) {
+            if (mGestureDetector.onTouchEvent(event) && !cameraMode) {
                 sendScaledMousePosition(x + mTextureView.getX(), y);
                 clickMouse();
                 return true;
@@ -171,7 +171,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                 case MotionEvent.ACTION_MOVE: // 2
                     if (event.getPointerCount() > 1) break;
                     if (!mDraggingCamera) {
-                        float slop = 24f;
+                        float slop = cameraMode ? 2f : 24f;
                         if (Math.abs(x - mDownX) > slop || Math.abs(y - mDownY) > slop) {
                             // Drag = hold the middle mouse button and move: the client turns the camera
                             // proportionally to the movement, like on a PC.
@@ -192,6 +192,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         longPressDetector = new GestureDetector(this, new GestureDetector.SimpleOnGestureListener() {
             @Override
             public void onLongPress(MotionEvent e) {
+                if (cameraMode) return;
                 // Right click at the pressed position (a real right mouse button, not the 2009 client's F11 trick)
                 sendScaledMousePosition(e.getX() + mTextureView.getX(), e.getY());
                 tapMouse(AWTInputEvent.BUTTON3_DOWN_MASK);
@@ -325,12 +326,10 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                     }
                     break;
                 case R.id.camera:
-                    if (!cameraMode) { // Camera Mode On
-                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F9, AWTInputEvent.VK_F9); // Send F9
+                    if (!cameraMode) { // Camera-only mode: drags always turn the camera, taps do nothing
                         cameraMode = true;
                         findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_pressed ));
                     } else { // Camera Mode off
-                        AWTInputBridge.sendKey((char) AWTInputEvent.VK_F8, AWTInputEvent.VK_F8);
                         cameraMode = false;
                         findViewById(R.id.camera).setBackground(getResources().getDrawable( R.drawable.control_button_normal ));
                     }
