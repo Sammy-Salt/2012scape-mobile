@@ -66,6 +66,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        AWTCanvasView.configureForDisplay(getResources().getDisplayMetrics().widthPixels, getResources().getDisplayMetrics().heightPixels);
         setContentView(R.layout.activity_java_gui_launcher);
 
         try {
@@ -162,6 +163,7 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
                 case MotionEvent.ACTION_UP: // 1
                 case MotionEvent.ACTION_CANCEL: // 3
                 case MotionEvent.ACTION_POINTER_UP: // 6
+                    releaseCameraKeys();
                     break;
                 case MotionEvent.ACTION_MOVE: // 2
                     sendScaledMousePosition(x + mTextureView.getX(), y);
@@ -232,26 +234,29 @@ public class JavaGUILauncherActivity extends BaseActivity implements View.OnTouc
         }
     }
 
+    private final java.util.Set<Integer> mHeldCameraKeys = new java.util.HashSet<>();
+    private final Runnable mReleaseCameraKeys = this::releaseCameraKeys;
+
+    private void releaseCameraKeys() {
+        mClickHandler.removeCallbacks(mReleaseCameraKeys);
+        for (int vk : mHeldCameraKeys) AWTInputBridge.sendKey((char) 0, vk, 0);
+        mHeldCameraKeys.clear();
+    }
+
+    private void holdCameraKey(int vk, boolean wanted) {
+        if (wanted && mHeldCameraKeys.add(vk)) AWTInputBridge.sendKey((char) 0, vk, 1);
+        else if (!wanted && mHeldCameraKeys.remove(vk)) AWTInputBridge.sendKey((char) 0, vk, 0);
+    }
+
+    /** Drag = hold the arrow keys while the finger moves (the client reads held keys once per frame). */
     private void panCamera(float dx, float dy) throws InterruptedException {
-        //Log.i("downthecrop-pan","dx: " +dx + " dy: " + dy);
-        final float threshold = 8.0f; // adjust this value as needed to control the sensitivity of the panning
-
-        // Check horizontal panning
-        if(dx > threshold) {
-            // Finger moved to the right, pan camera to the right
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_RIGHT, AWTInputEvent.VK_RIGHT);
-        } else if(dx < -threshold) {
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_LEFT, AWTInputEvent.VK_LEFT);
-        }
-
-        // Check vertical panning
-        if(dy > threshold) {
-            // Finger moved down, pan camera up
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_UP, AWTInputEvent.VK_UP);
-        } else if(dy < -threshold) {
-            // Finger moved up, pan camera down
-            AWTInputBridge.sendKey((char)AWTInputEvent.VK_DOWN, AWTInputEvent.VK_DOWN);
-        }
+        final float threshold = 2.0f;
+        holdCameraKey(AWTInputEvent.VK_RIGHT, dx > threshold);
+        holdCameraKey(AWTInputEvent.VK_LEFT, dx < -threshold);
+        holdCameraKey(AWTInputEvent.VK_UP, dy > threshold);
+        holdCameraKey(AWTInputEvent.VK_DOWN, dy < -threshold);
+        mClickHandler.removeCallbacks(mReleaseCameraKeys);
+        mClickHandler.postDelayed(mReleaseCameraKeys, 120);
     }
 
     @Override

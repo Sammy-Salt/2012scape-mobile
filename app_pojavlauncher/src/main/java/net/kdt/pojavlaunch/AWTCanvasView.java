@@ -14,8 +14,16 @@ import net.kdt.pojavlaunch.utils.*;
 public class AWTCanvasView extends TextureView implements TextureView.SurfaceTextureListener, Runnable {
     // The Darkan client's fixed-size window is 765x503 plus the window frame (title bar and borders),
     // so the virtual screen must be larger or the right and bottom edges are cut off.
-    public static final int AWT_CANVAS_WIDTH = 800;
-    public static final int AWT_CANVAS_HEIGHT = 560;
+    public static int AWT_CANVAS_WIDTH = 1200;
+    public static int AWT_CANVAS_HEIGHT = 540;
+
+    /** Size the virtual screen to the phone's landscape aspect ratio so the game fills the display. */
+    public static void configureForDisplay(int displayW, int displayH) {
+        int w = Math.max(displayW, displayH), h = Math.min(displayW, displayH);
+        if (w <= 0 || h <= 0) return;
+        AWT_CANVAS_WIDTH = 1200;
+        AWT_CANVAS_HEIGHT = Math.max(480, (int) Math.round(1200.0 * h / w) & ~1);
+    }
     private static final double NANOS = 1000000000.0;
     private boolean mIsDestroyed = false;
     private final LinkedList<Long> mTimes = new LinkedList<Long>(){{add(System.nanoTime());}};
